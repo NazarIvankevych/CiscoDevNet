@@ -1,0 +1,47 @@
+# {{ operation.name }}
+
+{% if operation.model_name%}
+{% with name = operation.name,  model_name = operation.model_name %}
+{% include 'includes/operation_description.j2' %}
+{% endwith %}
+{% endif %}
+
+{% if operation.description %}
+## Description
+{{ operation.description | escape_md_symbols }}
+{% endif %}
+{% with data_params = operation.data_params %}
+{% include 'includes/data_params.j2' %}
+{% endwith %}
+{% with path_params = operation.path_params %}
+{% include 'includes/path_params.j2' %}
+{% endwith %}
+{% with query_params = operation.query_params %}
+{% include 'includes/query_params.j2' %}
+{% endwith %}
+
+## Example
+```yaml
+- name: Execute '{{ operation.name }}' operation
+  ftd_configuration:
+    operation: "{{ operation.name }}"
+{% if operation.data_params %}
+    data:
+    {% for param_name in operation.data_params.keys() %}
+        {{ param_name }}: {{ '"{{ ' }}{{ param_name | camel_to_snake }}{{ ' }}"' }}
+    {% endfor %}
+{% endif %}
+{% if operation.path_params %}
+    path_params:
+    {% for param_name in operation.path_params.keys() %}
+        {{ param_name }}: {{ '"{{ ' }}{{ param_name | camel_to_snake }}{{ ' }}"' }}
+    {% endfor %}
+{% endif %}
+{% if operation.query_params %}
+    query_params:
+    {% for param_name in operation.query_params.keys() %}
+        {{ param_name }}: {{ '"{{ ' }}{{ param_name | camel_to_snake }}{{ ' }}"' }}
+    {% endfor %}
+{% endif %}
+
+```
