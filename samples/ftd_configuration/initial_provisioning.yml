@@ -1,0 +1,61 @@
+- hosts: vftd
+  gather_facts: False
+  any_errors_fatal: true
+  connection: httpapi
+  tasks:
+    - name: Get provisioning info
+      ftd_configuration:
+        operation: getInitialProvision
+        path_params:
+          objId: default
+        register_as: provisionInfo
+
+    - name: Show EULA text
+      debug:
+        msg: "EULA details: {{ provisionInfo.eulaText }}"
+
+    - name: Confirm EULA acceptance
+      pause:
+        prompt: 'Please confirm you want to accept EULA. Press Return to continue. To abort, press Ctrl+C and then "A"'
+
+    - name: Set temporary password
+      set_fact:
+        ansible_password_temp: wiaS=KwZA7iY72iRb+4ZsmQoLApUpRh9UE=vNnEK>LmYTD*eo<UW+ah+ZjbCm
+
+    - name: Complete initial provisioning
+      ftd_configuration:
+        operation: addInitialProvision
+        data:
+          acceptEULA: True
+          eulaText: "{{ provisionInfo.eulaText }}"
+          type: initialprovision
+          currentPassword: "{{ ansible_password }}"
+          newPassword: "{{ ansible_password_temp }}"
+      vars:
+        ansible_command_timeout: 30
+
+    - name: Get user id
+      ftd_configuration:
+        operation: getUserList
+        filters:
+          name: admin
+        register_as: admin_user
+
+    - name: Set password back
+      ftd_configuration:
+        operation: editUser
+        data:
+          name: "{{ ansible_user }}"
+          password: "{{ ansible_password_temp }}"
+          newPassword: "{{ ansible_password }}"
+          type: user
+          identitySourceId: "{{ admin_user.0.identitySourceId }}"
+          userServiceTypes: "{{ admin_user.0.userServiceTypes }}"
+          version: "{{ admin_user.0.version }}"
+          userPreferences: "{{ admin_user.0.userPreferences }}"
+          userRole: "{{ admin_user.0.userRole }}"
+        path_params:
+          objId: '{{ admin_user.0.id }}'
+
+- name: Deploy
+  import_playbook: deployment.yml
